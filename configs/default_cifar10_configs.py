@@ -28,11 +28,11 @@ def get_default_configs():
 
   # evaluation
   config.eval = evaluate = ml_collections.ConfigDict()
-  evaluate.begin_ckpt = 9
-  evaluate.end_ckpt = 26
+  evaluate.begin_ckpt = 6
+  evaluate.end_ckpt = 6
   evaluate.batch_size = 1024
-  evaluate.enable_sampling = False
-  evaluate.num_samples = 50000
+  evaluate.enable_sampling = True
+  evaluate.num_samples = 10000
   evaluate.enable_loss = True
   evaluate.enable_bpd = False
   evaluate.bpd_dataset = 'test'
@@ -67,6 +67,6 @@ def get_default_configs():
   optim.grad_clip = 1.
 
   config.seed = 42
-  config.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+  config.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
   return config

@@ -15,7 +15,10 @@
 
 # pylint: skip-file
 
-from . import utils, layers, layerspp, normalization
+from . import utils
+from . import layers
+from . import layerspp
+from . import normalization
 import torch.nn as nn
 import functools
 import torch
@@ -29,7 +32,6 @@ conv1x1 = layerspp.conv1x1
 get_act = layers.get_act
 get_normalization = normalization.get_normalization
 default_initializer = layers.default_init
-
 
 @utils.register_model(name='ncsnpp')
 class NCSNpp(nn.Module):

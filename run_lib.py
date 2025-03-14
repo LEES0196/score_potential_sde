@@ -22,11 +22,29 @@ import os
 import time
 
 import numpy as np
+
+import torch
+# from torch.utils import tensorboard
+from torchvision.utils import make_grid, save_image
+
 import tensorflow as tf
 import tensorflow_gan as tfgan
 import logging
 # Keep the import below for registering all model definitions
-from models import ddpm, ncsnv2, ncsnpp
+
+def remove_lock():
+  base_dir = os.path.expanduser("~/.cache/torch_extensions")
+  for root, dirs, files in os.walk(base_dir):
+    for file in files:
+        if file == "lock":
+            file_path = os.path.join(root, file)
+            print(f"Removing lock file: {file_path}")
+            os.remove(file_path)
+
+remove_lock()
+from models import ncsnv2
+from models import ddpm
+from models import ncsnpp
 import losses
 import sampling
 from models import utils as mutils
@@ -36,9 +54,6 @@ import evaluation
 import likelihood
 import sde_lib
 from absl import flags
-import torch
-from torch.utils import tensorboard
-from torchvision.utils import make_grid, save_image
 from utils import save_checkpoint, restore_checkpoint
 
 FLAGS = flags.FLAGS
@@ -57,31 +72,38 @@ def train(config, workdir):
   sample_dir = os.path.join(workdir, "samples")
   tf.io.gfile.makedirs(sample_dir)
 
-  tb_dir = os.path.join(workdir, "tensorboard")
-  tf.io.gfile.makedirs(tb_dir)
-  writer = tensorboard.SummaryWriter(tb_dir)
+  # tb_dir = os.path.join(workdir, "tensorboard")
+  # tf.io.gfile.makedirs(tb_dir)
+  # writer = tensorboard.SummaryWriter(tb_dir)
 
   # Initialize model.
+  print("Initializing model ... ", end="", flush=True)
   score_model = mutils.create_model(config)
   ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
   optimizer = losses.get_optimizer(config, score_model.parameters())
   state = dict(optimizer=optimizer, model=score_model, ema=ema, step=0)
+  print("Done!!")
 
+
+  print("Loading checkpoints ... ", end="", flush=True)
   # Create checkpoints directory
   checkpoint_dir = os.path.join(workdir, "checkpoints")
+
   # Intermediate checkpoints to resume training after pre-emption in cloud environments
-  checkpoint_meta_dir = os.path.join(workdir, "checkpoints-meta", "checkpoint.pth")
+  checkpoint_meta_dir = os.path.join(workdir, "checkpoints-meta", "checkpoint_6.pth")
   tf.io.gfile.makedirs(checkpoint_dir)
   tf.io.gfile.makedirs(os.path.dirname(checkpoint_meta_dir))
   # Resume training when intermediate checkpoints are detected
-  state = restore_checkpoint(checkpoint_meta_dir, state, config.device)
+  # state = restore_checkpoint(checkpoint_meta_dir, state, config.device)
   initial_step = int(state['step'])
+  print("Done!!")
 
   # Build data iterators
   train_ds, eval_ds, _ = datasets.get_dataset(config,
                                               uniform_dequantization=config.data.uniform_dequantization)
   train_iter = iter(train_ds)  # pytype: disable=wrong-arg-types
   eval_iter = iter(eval_ds)  # pytype: disable=wrong-arg-types
+  
   # Create data normalizer and its inverse
   scaler = datasets.get_data_scaler(config)
   inverse_scaler = datasets.get_data_inverse_scaler(config)
@@ -131,7 +153,7 @@ def train(config, workdir):
     loss = train_step_fn(state, batch)
     if step % config.training.log_freq == 0:
       logging.info("step: %d, training_loss: %.5e" % (step, loss.item()))
-      writer.add_scalar("training_loss", loss, step)
+      # writer.add_scalar("training_loss", loss, step)
 
     # Save a temporary checkpoint to resume training after pre-emption periodically
     if step != 0 and step % config.training.snapshot_freq_for_preemption == 0:
@@ -144,7 +166,7 @@ def train(config, workdir):
       eval_batch = scaler(eval_batch)
       eval_loss = eval_step_fn(state, eval_batch)
       logging.info("step: %d, eval_loss: %.5e" % (step, eval_loss.item()))
-      writer.add_scalar("eval_loss", eval_loss.item(), step)
+      # writer.add_scalar("eval_loss", eval_loss.item(), step)
 
     # Save a checkpoint periodically and generate samples if needed
     if step != 0 and step % config.training.snapshot_freq == 0 or step == num_train_steps:
@@ -266,6 +288,7 @@ def evaluate(config,
     ckpt_filename = os.path.join(checkpoint_dir, "checkpoint_{}.pth".format(ckpt))
     while not tf.io.gfile.exists(ckpt_filename):
       if not waiting_message_printed:
+        logging.warning(f"Cannot find the checkpoint file {ckpt_filename}")
         logging.warning("Waiting for the arrival of checkpoint_%d" % (ckpt,))
         waiting_message_printed = True
       time.sleep(60)
@@ -329,7 +352,8 @@ def evaluate(config,
     # Generate samples and compute IS/FID/KID when enabled
     if config.eval.enable_sampling:
       num_sampling_rounds = config.eval.num_samples // config.eval.batch_size + 1
-      for r in range(num_sampling_rounds):
+      from tqdm import tqdm
+      for r in tqdm(range(num_sampling_rounds)):
         logging.info("sampling -- ckpt: %d, round: %d" % (ckpt, r))
 
         # Directory to save samples. Different for each host to avoid writing conflicts
@@ -404,5 +428,8 @@ def evaluate(config,
       with tf.io.gfile.GFile(os.path.join(eval_dir, f"report_{ckpt}.npz"),
                              "wb") as f:
         io_buffer = io.BytesIO()
-        np.savez_compressed(io_buffer, IS=inception_score, fid=fid, kid=kid)
+        # np.savez_compressed(io_buffer, IS=inception_score, fid=fid, kid=kid)
         f.write(io_buffer.getvalue())
+      print("ckpt-%d --- inception_score: %.6e, FID: %.6e, KID: %.6e" % (
+          ckpt, inception_score, fid, kid))
+    print("Terminating Process!!")

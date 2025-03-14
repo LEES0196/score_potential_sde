@@ -1,0 +1,10 @@
+INFO - xla_bridge.py - 2025-03-14 10:19:24,045 - Unable to initialize backend 'tpu_driver': NOT_FOUND: Unable to find driver in registry given worker: 
+INFO - xla_bridge.py - 2025-03-14 10:19:24,046 - Unable to initialize backend 'rocm': NOT_FOUND: Could not find registered platform with name: "rocm". Available platform names are: Host Interpreter CUDA
+INFO - xla_bridge.py - 2025-03-14 10:19:24,047 - Unable to initialize backend 'tpu': module 'jaxlib.xla_extension' has no attribute 'get_tpu_client'
+INFO - xla_bridge.py - 2025-03-14 10:19:24,047 - Unable to initialize backend 'plugin': xla_extension has no attributes named get_plugin_device_client. Compile TensorFlow with //tensorflow/compiler/xla/python:enable_plugin_device set to true (defaults to false) to enable this.
+INFO - dataset_info.py - 2025-03-14 10:19:24,049 - Load dataset info from /home/lee0196/tensorflow_datasets/cifar10/3.0.2
+INFO - dataset_builder.py - 2025-03-14 10:19:24,071 - Reusing dataset cifar10 (/home/lee0196/tensorflow_datasets/cifar10/3.0.2)
+INFO - dataset_builder.py - 2025-03-14 10:19:24,071 - Constructing tf.data.Dataset for split train, from /home/lee0196/tensorflow_datasets/cifar10/3.0.2
+INFO - dataset_builder.py - 2025-03-14 10:19:24,223 - Reusing dataset cifar10 (/home/lee0196/tensorflow_datasets/cifar10/3.0.2)
+INFO - dataset_builder.py - 2025-03-14 10:19:24,223 - Constructing tf.data.Dataset for split test, from /home/lee0196/tensorflow_datasets/cifar10/3.0.2
+INFO - run_lib.py - 2025-03-14 10:19:24,589 - Starting training loop at step 0.

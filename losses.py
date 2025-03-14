@@ -168,8 +168,10 @@ def get_step_fn(sde, train, optimize_fn=None, reduce_mean=False, continuous=True
   else:
     assert not likelihood_weighting, "Likelihood weighting is not supported for original SMLD/DDPM training."
     if isinstance(sde, VESDE):
+      print("Score-Matching Langevin Dynamic Loss (SMLD) is Used!")
       loss_fn = get_smld_loss_fn(sde, train, reduce_mean=reduce_mean)
     elif isinstance(sde, VPSDE):
+      print("Denoising Diffusion Probabilistic Model (DDPM) is Used!")
       loss_fn = get_ddpm_loss_fn(sde, train, reduce_mean=reduce_mean)
     else:
       raise ValueError(f"Discrete training for {sde.__class__.__name__} is not recommended.")
