@@ -22,3 +22,6 @@ dist/
 
 # Checkpoints
 *.pth
+
+# Event infos
+*tensorboard/events.out.tfevents*
